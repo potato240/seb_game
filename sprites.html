@@ -36,22 +36,22 @@
     ctx.ellipse(34, 88, 20, 6, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Tray (back of ute)
+    // Full body (cab + tray joined)
     ctx.fillStyle = v.body;
     ctx.beginPath();
-    ctx.roundRect(10, 52, 44, 42, 6);
+    ctx.roundRect(10, 10, 44, 80, 6);
     ctx.fill();
 
     // Tray lines
     ctx.strokeStyle = v.cab;
     ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(12, 60); ctx.lineTo(52, 60); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(12, 72); ctx.lineTo(52, 72); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, 68); ctx.lineTo(52, 68); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, 78); ctx.lineTo(52, 78); ctx.stroke();
 
-    // Cab (front)
+    // Cab (front overlay)
     ctx.fillStyle = v.cab;
     ctx.beginPath();
-    ctx.roundRect(10, 10, 44, 42, 6);
+    ctx.roundRect(10, 10, 44, 44, [6, 6, 0, 0]);
     ctx.fill();
 
     // Windscreen
@@ -72,10 +72,6 @@
     ctx.beginPath(); ctx.ellipse(18, 10, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(46, 10, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
 
-    // Tail lights
-    ctx.fillStyle = '#e74c3c';
-    ctx.beginPath(); ctx.ellipse(18, 84, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(46, 84, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
 
     const label = document.createElement('div');
     label.className = 'label';
