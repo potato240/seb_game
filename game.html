@@ -367,7 +367,7 @@ function dropProbe() {
   }
   if (player.probes <= 0) return;
   player.probes--;
-  droppedProbes.push({ x: player.x, y: player.y, activated: false, pulse: 1.0 });
+  droppedProbes.push({ x: player.x, y: player.y, activated: false, pulse: 1.0, health: 500, maxHealth: 500 });
 }
 
 let score = 0;
@@ -557,19 +557,24 @@ function updateTornadoes(dt) {
       const pd = Math.hypot(p.x-t.x, p.y-t.y);
       if (pd < td.suck) {
         p.activated = true;
-        p.scoring = true;
-        p.scoringPts = td.pts;
+        // Damage: increases closer to core
+        const proximity = 1 - pd / td.suck;
+        const dmgPerFrame = td.pts * 0.5 * proximity;
+        p.health = Math.max(0, p.health - dmgPerFrame);
+        // Only score if still alive
+        if (p.health > 0) { p.scoring = true; p.scoringPts = td.pts; }
+        else { p.scoring = false; }
       } else {
         p.scoring = false;
       }
     }
   }
-  // Award points every 60 frames for each scoring probe
+  // Award points every 60 frames for each alive scoring probe
   scoreTimer++;
   if (scoreTimer >= 60) {
     scoreTimer = 0;
     for (const p of droppedProbes) {
-      if (p.scoring) score += p.scoringPts;
+      if (p.scoring && p.health > 0) score += p.scoringPts;
     }
   }
 }
@@ -664,23 +669,35 @@ function drawTownLabels() {
 
 function drawProbes() {
   for (const p of droppedProbes) {
-    // Expand/fade pulse ring when freshly dropped
+    const dead = p.health <= 0;
+    // Drop pulse ring
     if (p.pulse > 0) {
       const pr = 8 + (1-p.pulse)*30;
       ctx.beginPath(); ctx.arc(p.x,p.y,pr,0,Math.PI*2);
       ctx.strokeStyle=`rgba(255,255,255,${p.pulse*0.7})`; ctx.lineWidth=2; ctx.stroke();
       p.pulse = Math.max(0, p.pulse - 0.025);
     }
-    // Grey outline shadow
+    // Shadow
     ctx.beginPath(); ctx.arc(p.x,p.y,8,0,Math.PI*2);
     ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fill();
-    // Main dot
+    // Main dot — grey if dead, green if scoring, white if placed
     ctx.beginPath(); ctx.arc(p.x,p.y,7,0,Math.PI*2);
-    ctx.fillStyle=p.activated?'#00ffaa':'#ffffff'; ctx.fill();
-    ctx.strokeStyle=p.activated?'#00aa66':'#aaaaaa'; ctx.lineWidth=2.5; ctx.stroke();
+    ctx.fillStyle = dead ? '#555' : p.activated ? '#00ffaa' : '#ffffff'; ctx.fill();
+    ctx.strokeStyle = dead ? '#333' : p.activated ? '#00aa66' : '#aaaaaa';
+    ctx.lineWidth=2.5; ctx.stroke();
     // Centre pip
     ctx.beginPath(); ctx.arc(p.x,p.y,2,0,Math.PI*2);
-    ctx.fillStyle=p.activated?'#005533':'#666'; ctx.fill();
+    ctx.fillStyle = dead ? '#222' : p.activated ? '#005533' : '#666'; ctx.fill();
+    // Health arc — red clockwise from top showing damage taken
+    if (p.health < p.maxHealth) {
+      const damageFraction = 1 - p.health / p.maxHealth;
+      const startAngle = -Math.PI / 2;                          // 12 o'clock
+      const endAngle   = startAngle + damageFraction * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 10, startAngle, endAngle);
+      ctx.strokeStyle = dead ? '#ff2200' : '#ff6600';
+      ctx.lineWidth = 3; ctx.stroke();
+    }
   }
 }
 
@@ -868,7 +885,7 @@ function drawDayNight() {
 let mapOpen=false, mapView='road';
 function toggleMap(){mapOpen=!mapOpen;const el=document.getElementById('map-overlay');el.classList.toggle('open',mapOpen);if(mapOpen)resizeAndDrawMap();}
 function closeMap(){mapOpen=false;document.getElementById('map-overlay').classList.remove('open');}
-function resizeAndDrawMap(){const mc=document.getElementById('map-canvas');mc.width=mc.clientWidth||innerWidth;mc.height=mc.clientHeight||innerHeight;drawMap();}
+function resizeAndDrawMap(){const mc=document.getElementById('map-canvas');const s=Math.min(mc.clientWidth||innerWidth, mc.clientHeight||innerHeight);mc.width=s;mc.height=s;drawMap();}
 function setMapView(v){
   mapView=v;
   ['road','precip','velocity'].forEach(id=>{document.getElementById('tab-'+id).className=id===v?'active':'';});
@@ -953,7 +970,7 @@ for (let i=0;i<4;i++) spawnStorm();
 function loop(ts) {
   const dt=Math.min(ts-lastTime,50); lastTime=ts;
   update(dt); draw();
-  if (mapOpen) { const mc=document.getElementById('map-canvas'); if(mc.width!==mc.clientWidth||mc.height!==mc.clientHeight){mc.width=mc.clientWidth||innerWidth;mc.height=mc.clientHeight||innerHeight;} drawMap(); }
+  if (mapOpen) { const mc=document.getElementById('map-canvas'); const s=Math.min(mc.clientWidth||innerWidth,mc.clientHeight||innerHeight); if(mc.width!==s){mc.width=s;mc.height=s;} drawMap(); }
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
