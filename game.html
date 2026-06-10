@@ -484,6 +484,7 @@ function respawn() {
   player.thrown = false;
   player.invincible = 120;
   player.x = WW/2 - 600; player.y = WH/2 + 300;
+  droppedProbes.length = 0;
   document.getElementById('death-screen').classList.remove('show');
 }
 
@@ -788,8 +789,6 @@ function drawPlayer() {
 function drawUteCtx(ctx, colors) {
   const W=22,H=42;
   ctx.save(); ctx.translate(-W/2,-H/2);
-  ctx.fillStyle='rgba(0,0,0,0.2)';
-  ctx.beginPath(); ctx.ellipse(W/2+2,H+3,W*.6,5,0,0,Math.PI*2); ctx.fill();
   ctx.fillStyle=colors.body; roundRect(ctx,0,0,W,H,4); ctx.fill();
   ctx.strokeStyle=colors.cab; ctx.lineWidth=1.5;
   ctx.beginPath();ctx.moveTo(0,H*.52);ctx.lineTo(W,H*.52);ctx.stroke();
