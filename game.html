@@ -381,15 +381,22 @@ const storms = [];
 let stormSpawnTimer = 0;
 
 function spawnStorm() {
-  const side = Math.random() < 0.6 ? 'west' : 'south';
-  const x = side === 'west' ? -500 : Math.random() * WW;
-  const y = side === 'west' ? Math.random() * WH : WH + 500;
   const spd = 0.7 + Math.random() * 0.9;
   const dir = -0.2 + Math.random() * 0.35;
+  const vx = Math.cos(dir) * spd;
+  const vy = -Math.abs(Math.sin(dir) * spd * 0.6);
+  // Spawn on the edge the storm is coming FROM (opposite of its velocity)
+  const MARGIN = 500;
+  let x, y;
+  if (Math.abs(vx) >= Math.abs(vy)) {
+    x = vx > 0 ? -MARGIN : WW + MARGIN;
+    y = Math.random() * WH;
+  } else {
+    y = vy > 0 ? -MARGIN : WH + MARGIN;
+    x = Math.random() * WW;
+  }
   storms.push({
-    x, y,
-    vx: Math.cos(dir) * spd,
-    vy: -Math.abs(Math.sin(dir) * spd * 0.6),
+    x, y, vx, vy,
     r: 300 + Math.random() * 400,
     intensity: 0,
     phase: 'forming', timer: 0,
