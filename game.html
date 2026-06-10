@@ -428,6 +428,8 @@ function update(dt) {
 
 function updatePlayer(dt) {
   const TURN=0.045, ACCEL=0.18, BRAKE=0.92;
+  const onRoad = tileKind(Math.floor(player.x/TILE), Math.floor(player.y/TILE)) === 'road';
+  const speedLimit = onRoad ? player.maxSpeed : player.maxSpeed * 0.5;
   if (player.thrown) {
     player.x += player.vx; player.y += player.vy;
     player.vx *= 0.94; player.vy *= 0.94;
@@ -441,10 +443,11 @@ function updatePlayer(dt) {
     if (keys['ArrowLeft'])  player.angle -= TURN * (player.speed>0?1:-1);
     if (keys['ArrowRight']) player.angle += TURN * (player.speed>0?1:-1);
   }
-  if (keys['ArrowUp'])        player.speed = Math.min(player.speed+ACCEL, player.maxSpeed);
-  else if (keys['ArrowDown']) player.speed = Math.max(player.speed-ACCEL, -player.maxSpeed*0.75);
+  if (keys['ArrowUp'])        player.speed = Math.min(player.speed+ACCEL, speedLimit);
+  else if (keys['ArrowDown']) player.speed = Math.max(player.speed-ACCEL, -speedLimit*0.75);
   else                        player.speed *= BRAKE;
   if (Math.abs(player.speed) < 0.05) player.speed = 0;
+  player.speed = Math.max(-speedLimit*0.75, Math.min(speedLimit, player.speed));
   const nx = player.x + Math.sin(player.angle) * player.speed;
   const ny = player.y - Math.cos(player.angle) * player.speed;
   if (!playerBlocked(nx, ny)) { player.x = nx; player.y = ny; }
