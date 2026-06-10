@@ -70,6 +70,7 @@
   <div>❤️ <span class="bar-bg"><span class="bar-fg" id="hp-bar" style="background:#e74c3c;width:100%"></span></span> <span id="hp-text">100</span></div>
   <div>📍 Probes: <span id="probes-text">10</span></div>
   <div>🚗 Speed: <span id="speed-text">0</span></div>
+  <div id="score-display">⭐ Score: 0</div>
   <div id="time-display">🕐 06:00</div>
   <div id="location-display"></div>
   <div id="tornado-info"></div>
@@ -109,11 +110,11 @@ resize(); addEventListener('resize', resize);
 const WW = 16000, WH = 16000, TILE = 64;
 
 const TTYPES = {
-  rope:        { w:12,  suck:80,  dmg:2,  label:'Rope Tornado',         col:'#c0a86e' },
-  cone:        { w:40,  suck:150, dmg:8,  label:'Cone Tornado',         col:'#9a8060' },
-  stovepipe:   { w:70,  suck:210, dmg:15, label:'Stovepipe Tornado',    col:'#7a6050' },
-  wedge:       { w:320, suck:500, dmg:28, label:'Wedge Tornado',        col:'#504030' },
-  multivortex: { w:130, suck:340, dmg:20, label:'Multi-Vortex Tornado', col:'#605040' },
+  rope:        { w:12,  suck:80,  dmg:2,  pts:1, label:'Rope Tornado',         col:'#c0a86e' },
+  cone:        { w:40,  suck:150, dmg:8,  pts:2, label:'Cone Tornado',         col:'#9a8060' },
+  stovepipe:   { w:70,  suck:210, dmg:15, pts:3, label:'Stovepipe Tornado',    col:'#7a6050' },
+  wedge:       { w:320, suck:500, dmg:28, pts:5, label:'Wedge Tornado',        col:'#504030' },
+  multivortex: { w:130, suck:340, dmg:20, pts:4, label:'Multi-Vortex Tornado', col:'#605040' },
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -355,11 +356,22 @@ function showColorPicker() {
 // PROBES
 // ═══════════════════════════════════════════════════════════
 const droppedProbes = [];
+const PICKUP_DIST = 48;
 function dropProbe() {
+  // Pick up a nearby probe instead of dropping if one is close
+  const nearIdx = droppedProbes.findIndex(p => Math.hypot(p.x-player.x, p.y-player.y) < PICKUP_DIST);
+  if (nearIdx !== -1) {
+    droppedProbes.splice(nearIdx, 1);
+    player.probes++;
+    return;
+  }
   if (player.probes <= 0) return;
   player.probes--;
   droppedProbes.push({ x: player.x, y: player.y, activated: false, pulse: 1.0 });
 }
+
+let score = 0;
+let scoreTimer = 0; // counts frames, awards points every 60
 
 
 // ═══════════════════════════════════════════════════════════
@@ -488,6 +500,7 @@ function respawn() {
   player.invincible = 120;
   player.x = WW/2 - 600; player.y = WH/2 + 300;
   droppedProbes.length = 0;
+  score = 0;
   document.getElementById('death-screen').classList.remove('show');
 }
 
@@ -541,7 +554,22 @@ function updateTornadoes(dt) {
       }
     }
     for (const p of droppedProbes) {
-      if (Math.hypot(p.x-t.x,p.y-t.y)<td.suck*1.5) p.activated=true;
+      const pd = Math.hypot(p.x-t.x, p.y-t.y);
+      if (pd < td.suck) {
+        p.activated = true;
+        p.scoring = true;
+        p.scoringPts = td.pts;
+      } else {
+        p.scoring = false;
+      }
+    }
+  }
+  // Award points every 60 frames for each scoring probe
+  scoreTimer++;
+  if (scoreTimer >= 60) {
+    scoreTimer = 0;
+    for (const p of droppedProbes) {
+      if (p.scoring) score += p.scoringPts;
     }
   }
 }
@@ -551,6 +579,7 @@ function updateHUD() {
   document.getElementById('hp-bar').style.width=player.health+'%';
   document.getElementById('probes-text').textContent=player.probes;
   document.getElementById('speed-text').textContent=Math.abs(player.speed).toFixed(1);
+  document.getElementById('score-display').textContent='⭐ Score: '+score;
   document.getElementById('time-display').textContent='🕐 '+timeString();
   const town = nearTown(player.x, player.y);
   document.getElementById('location-display').textContent = town ? '📍 '+town.name : '';
