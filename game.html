@@ -72,7 +72,7 @@
     <button              id="tab-precip"   onclick="setMapView('precip')">Precipitation</button>
     <button              id="tab-velocity" onclick="setMapView('velocity')">Velocity</button>
   </div>
-  <canvas id="map-canvas" width="560" height="560"></canvas>
+  <canvas id="map-canvas" width="700" height="700"></canvas>
   <div style="color:#666;font-size:10px;margin-top:6px;text-align:center">🔴 Tornado &nbsp;|&nbsp; 🟡 Storm &nbsp;|&nbsp; 🔵 You &nbsp;|&nbsp; ⚪ Probe &nbsp;|&nbsp; 🟫 Town</div>
 </div>
 
@@ -344,8 +344,9 @@ const droppedProbes = [];
 function dropProbe() {
   if (player.probes <= 0) return;
   player.probes--;
-  droppedProbes.push({ x: player.x, y: player.y, activated: false });
+  droppedProbes.push({ x: player.x, y: player.y, activated: false, pulse: 1.0 });
 }
+
 
 // ═══════════════════════════════════════════════════════════
 // STORMS
@@ -430,10 +431,21 @@ function updatePlayer(dt) {
   else if (keys['ArrowDown']) player.speed = Math.max(player.speed-ACCEL, -player.maxSpeed*0.75);
   else                        player.speed *= BRAKE;
   if (Math.abs(player.speed) < 0.05) player.speed = 0;
-  player.x += Math.sin(player.angle) * player.speed;
-  player.y -= Math.cos(player.angle) * player.speed;
+  const nx = player.x + Math.sin(player.angle) * player.speed;
+  const ny = player.y - Math.cos(player.angle) * player.speed;
+  if (!playerBlocked(nx, ny)) { player.x = nx; player.y = ny; }
+  else player.speed = 0;
   clampPlayer();
   if (player.invincible > 0) player.invincible--;
+}
+
+function isBuildingTile(wx, wy) {
+  return tileKind(Math.floor(wx/TILE), Math.floor(wy/TILE)) === 'building';
+}
+function playerBlocked(nx, ny) {
+  const hw=9, hh=14;
+  return isBuildingTile(nx-hw,ny-hh) || isBuildingTile(nx+hw,ny-hh) ||
+         isBuildingTile(nx-hw,ny+hh) || isBuildingTile(nx+hw,ny+hh);
 }
 function clampPlayer() {
   player.x = Math.max(0,Math.min(WW,player.x));
@@ -526,6 +538,7 @@ function draw() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.save(); ctx.translate(offX,offY);
   drawTerrain();
+  drawWorldBorder();
   drawTownLabels();
   drawProbes();
   drawStorms();
@@ -589,10 +602,34 @@ function drawTownLabels() {
 
 function drawProbes() {
   for (const p of droppedProbes) {
-    ctx.beginPath(); ctx.arc(p.x,p.y,5,0,Math.PI*2);
+    // Expand/fade pulse ring when freshly dropped
+    if (p.pulse > 0) {
+      const pr = 8 + (1-p.pulse)*30;
+      ctx.beginPath(); ctx.arc(p.x,p.y,pr,0,Math.PI*2);
+      ctx.strokeStyle=`rgba(255,255,255,${p.pulse*0.7})`; ctx.lineWidth=2; ctx.stroke();
+      p.pulse = Math.max(0, p.pulse - 0.025);
+    }
+    // Grey outline shadow
+    ctx.beginPath(); ctx.arc(p.x,p.y,8,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fill();
+    // Main dot
+    ctx.beginPath(); ctx.arc(p.x,p.y,7,0,Math.PI*2);
     ctx.fillStyle=p.activated?'#00ffaa':'#ffffff'; ctx.fill();
-    ctx.strokeStyle=p.activated?'#00aa66':'#888'; ctx.lineWidth=2; ctx.stroke();
+    ctx.strokeStyle=p.activated?'#00aa66':'#aaaaaa'; ctx.lineWidth=2.5; ctx.stroke();
+    // Centre pip
+    ctx.beginPath(); ctx.arc(p.x,p.y,2,0,Math.PI*2);
+    ctx.fillStyle=p.activated?'#005533':'#666'; ctx.fill();
   }
+}
+
+function drawWorldBorder() {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(220,30,30,0.75)';
+  ctx.lineWidth = 4;
+  ctx.setLineDash([24, 16]);
+  ctx.strokeRect(0, 0, WW, WH);
+  ctx.setLineDash([]);
+  ctx.restore();
 }
 
 function drawStorms() {
@@ -796,6 +833,9 @@ function drawMap() {
     }
   }
 
+  // World border on map
+  mctx.strokeStyle='rgba(220,30,30,0.8)'; mctx.lineWidth=2; mctx.setLineDash([8,5]);
+  mctx.strokeRect(0,0,S,S); mctx.setLineDash([]);
   // Storms
   for (const s of storms){if(s.dead)continue;mctx.beginPath();mctx.arc(s.x*SCALE,s.y*SCALE,4,0,Math.PI*2);mctx.fillStyle='#ffee44';mctx.fill();}
   // Tornadoes
