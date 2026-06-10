@@ -8,8 +8,8 @@
     body { background:#000; overflow:hidden; font-family:monospace; }
     canvas { display:block; }
     #hud { position:fixed; top:12px; left:12px; color:#fff; font-size:13px; line-height:2; text-shadow:1px 1px 3px #000; pointer-events:none; }
-    .bar-bg { display:inline-block; width:90px; height:8px; background:#333; border-radius:4px; vertical-align:middle; margin-left:6px; }
-    .bar-fg { height:8px; border-radius:4px; }
+    .bar-bg { display:inline-block; width:100px; height:10px; background:#333; border-radius:5px; vertical-align:middle; margin-left:6px; overflow:hidden; }
+    .bar-fg { height:10px; border-radius:5px; transition:width 0.15s; }
     #tornado-info { color:#ffaa00; margin-top:4px; min-height:18px; }
     #time-display { color:#aaddff; }
     #location-display { color:#88ff88; font-size:11px; }
@@ -678,42 +678,73 @@ function drawTornadoes() {
     if (t.dead) continue;
     const type=t.seq[t.seqIdx]; if (type==='_end') continue;
     const td=TTYPES[type];
+    const r=td.w/2;  // visual radius matches collision radius exactly
+
     ctx.save(); ctx.translate(t.x,t.y);
+
+    // Faint suction ring
     ctx.beginPath(); ctx.arc(0,0,td.suck,0,Math.PI*2);
-    ctx.strokeStyle='rgba(200,180,100,0.1)'; ctx.lineWidth=2; ctx.stroke();
+    ctx.strokeStyle='rgba(200,170,80,0.08)'; ctx.lineWidth=2; ctx.stroke();
+
     if (type==='multivortex') {
-      drawFunnel(ctx,0,0,td.w*.4,t.rot,td.col);
+      drawTornadoSprite(ctx, 0, 0, r*0.45, t.rot, td.col);
       for (let i=0;i<3;i++) {
-        const a=t.rot*1.4+i*(Math.PI*2/3);
-        drawFunnel(ctx,Math.cos(a)*td.w*.45,Math.sin(a)*td.w*.45,td.w*.25,t.rot*2,td.col);
+        const a = t.rot*1.3 + i*(Math.PI*2/3);
+        drawTornadoSprite(ctx, Math.cos(a)*r*0.6, Math.sin(a)*r*0.6, r*0.28, t.rot*2, td.col);
       }
-    } else drawFunnel(ctx,0,0,td.w,t.rot,td.col);
-    ctx.fillStyle='#ffdd88'; ctx.font='bold 11px monospace'; ctx.textAlign='center';
-    ctx.fillText(td.label,0,-td.w/2-10);
+    } else {
+      drawTornadoSprite(ctx, 0, 0, r, t.rot, td.col);
+    }
+
+    // Label
+    ctx.fillStyle='rgba(255,220,100,0.9)'; ctx.font='bold 11px monospace'; ctx.textAlign='center';
+    ctx.fillText(td.label, 0, -r-12);
     ctx.restore();
   }
 }
 
-function drawFunnel(ctx,x,y,w,rot,col) {
-  const r=w/2;
-  for (let layer=3;layer>=0;layer--) {
-    const lr=r*(1-layer*.18), alpha=.15+layer*.12;
-    ctx.save(); ctx.translate(x,y); ctx.rotate(rot+layer*.4);
-    const grad=ctx.createRadialGradient(0,0,0,0,0,lr);
-    grad.addColorStop(0,`rgba(180,160,140,${alpha+.3})`);
-    grad.addColorStop(.5,`rgba(100,85,65,${alpha})`);
-    grad.addColorStop(1,'rgba(0,0,0,0)');
+// Top-down tornado sprite: debris cloud with rotating arms and dark eye
+function drawTornadoSprite(ctx, x, y, r, rot, col) {
+  ctx.save(); ctx.translate(x, y);
+
+  // Outer debris/dust cloud
+  const outerGrad = ctx.createRadialGradient(0,0, r*0.3, 0,0, r);
+  outerGrad.addColorStop(0,   'rgba(110,95,75,0.85)');
+  outerGrad.addColorStop(0.55,'rgba(85,72,55,0.65)');
+  outerGrad.addColorStop(1,   'rgba(50,42,30,0)');
+  ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2);
+  ctx.fillStyle=outerGrad; ctx.fill();
+
+  // 4 rotating spiral arms
+  const armCount = r < 20 ? 2 : 4;
+  for (let arm=0; arm<armCount; arm++) {
+    ctx.save();
+    ctx.rotate(rot + arm*(Math.PI*2/armCount));
     ctx.beginPath();
-    for (let i=0;i<=60;i++) {
-      const a=(i/60)*Math.PI*2, sr=lr*(.7+.3*Math.sin(a*3+rot*2));
-      i===0?ctx.moveTo(Math.cos(a)*sr,Math.sin(a)*sr):ctx.lineTo(Math.cos(a)*sr,Math.sin(a)*sr);
+    for (let i=0; i<=40; i++) {
+      const t2 = i/40;
+      const angle = t2 * Math.PI * 1.5;
+      const radius = r * 0.1 + t2 * r * 0.88;
+      const px2 = Math.cos(angle)*radius, py2 = Math.sin(angle)*radius;
+      i===0 ? ctx.moveTo(px2,py2) : ctx.lineTo(px2,py2);
     }
-    ctx.closePath(); ctx.fillStyle=grad; ctx.fill(); ctx.restore();
+    ctx.strokeStyle=`rgba(140,120,90,0.45)`; ctx.lineWidth=Math.max(2, r*0.12); ctx.stroke();
+    ctx.restore();
   }
-  ctx.save(); ctx.translate(x,y);
-  const cg=ctx.createRadialGradient(0,0,0,0,0,r*.35);
-  cg.addColorStop(0,'rgba(20,15,10,0.9)'); cg.addColorStop(1,'rgba(20,15,10,0)');
-  ctx.beginPath(); ctx.arc(0,0,r*.35,0,Math.PI*2); ctx.fillStyle=cg; ctx.fill();
+
+  // Inner condensation funnel ring
+  ctx.beginPath(); ctx.arc(0,0,r*0.38,0,Math.PI*2);
+  ctx.strokeStyle='rgba(180,165,140,0.6)'; ctx.lineWidth=Math.max(1.5,r*0.06); ctx.stroke();
+
+  // Dark rotating eye
+  const eyeR = Math.max(3, r*0.18);
+  const eyeGrad = ctx.createRadialGradient(0,0,0,0,0,eyeR);
+  eyeGrad.addColorStop(0,  'rgba(10,8,5,0.95)');
+  eyeGrad.addColorStop(0.7,'rgba(25,20,12,0.8)');
+  eyeGrad.addColorStop(1,  'rgba(40,32,20,0)');
+  ctx.beginPath(); ctx.arc(0,0,eyeR,0,Math.PI*2);
+  ctx.fillStyle=eyeGrad; ctx.fill();
+
   ctx.restore();
 }
 
