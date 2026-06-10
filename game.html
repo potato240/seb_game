@@ -523,7 +523,7 @@ function updateStorms(dt) {
       s.intensity=1-s.timer/s.durations.dissipating;
       if (s.timer>=s.durations.dissipating) s.dead=true;
     }
-    if (s.x>WW+700||s.y<-700) s.dead=true;
+    if (s.x>WW+700||s.x<-700||s.y<-700||s.y>WH+700) s.dead=true;
   }
 }
 
