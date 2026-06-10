@@ -868,7 +868,7 @@ function drawDayNight() {
 let mapOpen=false, mapView='road';
 function toggleMap(){mapOpen=!mapOpen;const el=document.getElementById('map-overlay');el.classList.toggle('open',mapOpen);if(mapOpen)resizeAndDrawMap();}
 function closeMap(){mapOpen=false;document.getElementById('map-overlay').classList.remove('open');}
-function resizeAndDrawMap(){const mc=document.getElementById('map-canvas');const s=Math.min(mc.clientWidth,mc.clientHeight);mc.width=s;mc.height=s;drawMap();}
+function resizeAndDrawMap(){const mc=document.getElementById('map-canvas');mc.width=mc.clientWidth||innerWidth;mc.height=mc.clientHeight||innerHeight;drawMap();}
 function setMapView(v){
   mapView=v;
   ['road','precip','velocity'].forEach(id=>{document.getElementById('tab-'+id).className=id===v?'active':'';});
@@ -878,33 +878,35 @@ function setMapView(v){
 function drawMap() {
   const mc=document.getElementById('map-canvas');
   const mctx=mc.getContext('2d');
-  const S=mc.width, SCALE=S/WW;
-  mctx.clearRect(0,0,S,S);
+  const W=mc.width, H=mc.height;
+  const SX=W/WW, SY=H/WH;   // separate x/y scales to fill the full canvas
+  mctx.clearRect(0,0,W,H);
 
   if (mapView==='road') {
-    const step=Math.ceil(WW/S);   // ~29px per map pixel
-    for (let py=0;py<S;py++) {
-      for (let px=0;px<S;px++) {
-        const wx=px/SCALE, wy=py/SCALE;
-        const tx=Math.floor(wx/TILE),ty=Math.floor(wy/TILE);
+    // Sample every tile and draw a rectangle sized to match
+    const tileW = TILE*SX, tileH = TILE*SY;
+    const startTX=0, startTY=0;
+    const endTX=Math.ceil(WW/TILE), endTY=Math.ceil(WH/TILE);
+    for (let ty=startTY;ty<endTY;ty++) {
+      for (let tx=startTX;tx<endTX;tx++) {
         const kind=tileKind(tx,ty);
         mctx.fillStyle=tileBaseColor(tx,ty,kind);
-        mctx.fillRect(px,py,1,1);
+        mctx.fillRect(tx*tileW, ty*tileH, Math.ceil(tileW)+1, Math.ceil(tileH)+1);
       }
     }
-    // Town circles on road map
+    // Town labels
     for (const t of TOWNS) {
-      const tx=t.x*SCALE, ty=t.y*SCALE;
-      mctx.beginPath();mctx.arc(tx,ty,TOWN_RADIUS*SCALE,0,Math.PI*2);
+      const tx=t.x*SX, ty=t.y*SY, tr=TOWN_RADIUS*Math.min(SX,SY);
+      mctx.beginPath();mctx.arc(tx,ty,tr,0,Math.PI*2);
       mctx.strokeStyle='rgba(255,220,80,0.5)';mctx.lineWidth=1;mctx.stroke();
-      mctx.fillStyle='#ffe080';mctx.font='bold 8px sans-serif';mctx.textAlign='center';
-      mctx.fillText(t.name,tx,ty-TOWN_RADIUS*SCALE-2);
+      mctx.fillStyle='#ffe080';mctx.font='bold 9px sans-serif';mctx.textAlign='center';
+      mctx.fillText(t.name, tx, ty-tr-3);
     }
   } else if (mapView==='precip') {
-    mctx.fillStyle='#0a0a1a';mctx.fillRect(0,0,S,S);
+    mctx.fillStyle='#0a0a1a';mctx.fillRect(0,0,W,H);
     for (const s of storms) {
       if (s.dead) continue;
-      const sx=s.x*SCALE,sy=s.y*SCALE,sr=s.r*SCALE;
+      const sx=s.x*SX, sy=s.y*SY, sr=s.r*Math.min(SX,SY);
       const g=mctx.createRadialGradient(sx,sy,0,sx,sy,sr);
       if (s.intensity<.4){g.addColorStop(0,'rgba(0,200,0,.8)');g.addColorStop(1,'rgba(0,200,0,0)');}
       else if (s.intensity<.7){g.addColorStop(0,'rgba(255,200,0,.8)');g.addColorStop(.5,'rgba(0,200,0,.4)');g.addColorStop(1,'rgba(0,200,0,0)');}
@@ -912,10 +914,10 @@ function drawMap() {
       mctx.beginPath();mctx.arc(sx,sy,sr,0,Math.PI*2);mctx.fillStyle=g;mctx.fill();
     }
   } else {
-    mctx.fillStyle='#0a0a1a';mctx.fillRect(0,0,S,S);
+    mctx.fillStyle='#0a0a1a';mctx.fillRect(0,0,W,H);
     for (const s of storms) {
       if (s.dead) continue;
-      const sx=s.x*SCALE,sy=s.y*SCALE,sr=s.r*SCALE;
+      const sx=s.x*SX, sy=s.y*SY, sr=s.r*Math.min(SX,SY);
       const gl=mctx.createRadialGradient(sx-sr*.3,sy,0,sx,sy,sr);
       gl.addColorStop(0,'rgba(0,220,80,.7)');gl.addColorStop(1,'rgba(0,0,0,0)');
       mctx.beginPath();mctx.arc(sx,sy,sr,0,Math.PI*2);mctx.fillStyle=gl;mctx.fill();
@@ -925,22 +927,22 @@ function drawMap() {
     }
   }
 
-  // World border on map
-  mctx.strokeStyle='rgba(220,30,30,0.8)'; mctx.lineWidth=2; mctx.setLineDash([8,5]);
-  mctx.strokeRect(0,0,S,S); mctx.setLineDash([]);
+  // World border
+  mctx.strokeStyle='rgba(220,30,30,0.8)';mctx.lineWidth=2;mctx.setLineDash([8,5]);
+  mctx.strokeRect(1,1,W-2,H-2);mctx.setLineDash([]);
   // Storms
-  for (const s of storms){if(s.dead)continue;mctx.beginPath();mctx.arc(s.x*SCALE,s.y*SCALE,4,0,Math.PI*2);mctx.fillStyle='#ffee44';mctx.fill();}
+  for (const s of storms){if(s.dead)continue;mctx.beginPath();mctx.arc(s.x*SX,s.y*SY,5,0,Math.PI*2);mctx.fillStyle='#ffee44';mctx.fill();}
   // Tornadoes
-  for (const t of tornadoes){if(t.dead||t.seq[t.seqIdx]==='_end')continue;mctx.beginPath();mctx.arc(t.x*SCALE,t.y*SCALE,5,0,Math.PI*2);mctx.fillStyle='#ff4444';mctx.fill();}
+  for (const t of tornadoes){if(t.dead||t.seq[t.seqIdx]==='_end')continue;mctx.beginPath();mctx.arc(t.x*SX,t.y*SY,6,0,Math.PI*2);mctx.fillStyle='#ff4444';mctx.fill();}
   // Probes
-  for (const p of droppedProbes){mctx.beginPath();mctx.arc(p.x*SCALE,p.y*SCALE,2,0,Math.PI*2);mctx.fillStyle=p.activated?'#00ffaa':'#ffffff';mctx.fill();}
-  // Player
-  mctx.beginPath();mctx.arc(player.x*SCALE,player.y*SCALE,5,0,Math.PI*2);
-  mctx.fillStyle='#4488ff';mctx.strokeStyle='#fff';mctx.lineWidth=1.5;mctx.fill();mctx.stroke();
-  // View box
-  const vw=(canvas.width/WW)*S,vh=(canvas.height/WH)*S;
-  mctx.strokeStyle='rgba(255,255,255,0.2)';mctx.lineWidth=1;
-  mctx.strokeRect(player.x*SCALE-vw/2,player.y*SCALE-vh/2,vw,vh);
+  for (const p of droppedProbes){mctx.beginPath();mctx.arc(p.x*SX,p.y*SY,3,0,Math.PI*2);mctx.fillStyle=p.activated?'#00ffaa':'#ffffff';mctx.fill();}
+  // Player dot
+  mctx.beginPath();mctx.arc(player.x*SX,player.y*SY,6,0,Math.PI*2);
+  mctx.fillStyle='#4488ff';mctx.strokeStyle='#fff';mctx.lineWidth=2;mctx.fill();mctx.stroke();
+  // Viewport box
+  const vw=(canvas.width/WW)*W, vh=(canvas.height/WH)*H;
+  mctx.strokeStyle='rgba(255,255,255,0.25)';mctx.lineWidth=1;
+  mctx.strokeRect(player.x*SX-vw/2, player.y*SY-vh/2, vw, vh);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -951,7 +953,7 @@ for (let i=0;i<4;i++) spawnStorm();
 function loop(ts) {
   const dt=Math.min(ts-lastTime,50); lastTime=ts;
   update(dt); draw();
-  if (mapOpen) { const mc=document.getElementById('map-canvas'); if(mc.width!==mc.clientWidth){mc.width=mc.clientWidth;mc.height=mc.clientHeight;} drawMap(); }
+  if (mapOpen) { const mc=document.getElementById('map-canvas'); if(mc.width!==mc.clientWidth||mc.height!==mc.clientHeight){mc.width=mc.clientWidth||innerWidth;mc.height=mc.clientHeight||innerHeight;} drawMap(); }
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
