@@ -13,7 +13,9 @@
     #tornado-info { color:#ffaa00; margin-top:4px; min-height:18px; }
     #time-display { color:#aaddff; }
     #location-display { color:#88ff88; font-size:11px; }
-    #map-overlay { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(5,5,15,0.97); border:2px solid #444; border-radius:10px; padding:14px; z-index:20; }
+    #map-overlay { display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(5,5,15,0.97); padding:14px; z-index:20; box-sizing:border-box; flex-direction:column; }
+    #map-overlay.open { display:flex; }
+    #map-canvas { flex:1; min-height:0; width:100% !important; height:100% !important; }
     #map-tabs { display:flex; gap:8px; margin-bottom:10px; }
     #map-tabs button { padding:5px 14px; background:#222; color:#bbb; border:1px solid #555; border-radius:5px; cursor:pointer; font-size:12px; }
     #map-tabs button.active { background:#1a7a3a; color:#fff; border-color:#1a7a3a; }
@@ -806,8 +808,9 @@ function drawDayNight() {
 // MAP
 // ═══════════════════════════════════════════════════════════
 let mapOpen=false, mapView='road';
-function toggleMap(){mapOpen=!mapOpen;document.getElementById('map-overlay').style.display=mapOpen?'block':'none';if(mapOpen)drawMap();}
-function closeMap(){mapOpen=false;document.getElementById('map-overlay').style.display='none';}
+function toggleMap(){mapOpen=!mapOpen;const el=document.getElementById('map-overlay');el.classList.toggle('open',mapOpen);if(mapOpen)resizeAndDrawMap();}
+function closeMap(){mapOpen=false;document.getElementById('map-overlay').classList.remove('open');}
+function resizeAndDrawMap(){const mc=document.getElementById('map-canvas');const s=Math.min(mc.clientWidth,mc.clientHeight);mc.width=s;mc.height=s;drawMap();}
 function setMapView(v){
   mapView=v;
   ['road','precip','velocity'].forEach(id=>{document.getElementById('tab-'+id).className=id===v?'active':'';});
@@ -890,7 +893,7 @@ for (let i=0;i<4;i++) spawnStorm();
 function loop(ts) {
   const dt=Math.min(ts-lastTime,50); lastTime=ts;
   update(dt); draw();
-  if (mapOpen) drawMap();
+  if (mapOpen) { const mc=document.getElementById('map-canvas'); if(mc.width!==mc.clientWidth){mc.width=mc.clientWidth;mc.height=mc.clientHeight;} drawMap(); }
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
