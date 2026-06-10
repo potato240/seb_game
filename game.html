@@ -244,16 +244,10 @@ const DAY_SPEED = 1 / 14400; // full cycle in ~4 real minutes (14400 frames @ 60
 let lastMidnight = false;
 
 function advanceTime() {
-  const wasMidnight = gameTime < 0.04 || gameTime > 0.97;
   gameTime += DAY_SPEED;
-  if (gameTime >= 1) gameTime -= 1;
-  const isMidnight = gameTime < 0.04 || gameTime > 0.97;
-  // Wind shift triggers once as we cross midnight
-  if (!wasMidnight && isMidnight && !lastMidnight) {
+  if (gameTime >= 1) {
+    gameTime -= 1;
     triggerWindShift();
-    lastMidnight = true;
-  } else if (!isMidnight) {
-    lastMidnight = false;
   }
 }
 
