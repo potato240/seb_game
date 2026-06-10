@@ -534,6 +534,9 @@ function updateStorms(dt) {
 }
 
 function updateTornadoes(dt) {
+  // Reset probe scoring state before checking all tornadoes
+  for (const p of droppedProbes) { p.scoring = false; p.scoringPts = 0; }
+
   for (const t of tornadoes) {
     if (t.dead) continue;
     const type=t.seq[t.seqIdx];
@@ -545,20 +548,13 @@ function updateTornadoes(dt) {
     t.rot+=0.08;
     t.seqTimer++;
     if (t.seqTimer>t.seqDur){t.seqIdx++;t.seqTimer=0;t.seqDur=500+Math.random()*800;}
-    // Probe scoring runs regardless of player invincibility
     for (const p of droppedProbes) {
       const pd = Math.hypot(p.x-t.x, p.y-t.y);
       if (pd < td.suck) {
         p.activated = true;
-        // Damage: increases closer to core
         const proximity = 1 - pd / td.suck;
-        const dmgPerFrame = td.pts * 0.5 * proximity;
-        p.health = Math.max(0, p.health - dmgPerFrame);
-        // Only score if still alive
-        if (p.health > 0) { p.scoring = true; p.scoringPts = td.pts; }
-        else { p.scoring = false; }
-      } else {
-        p.scoring = false;
+        p.health = Math.max(0, p.health - td.pts * 0.5 * proximity);
+        if (p.health > 0) { p.scoring = true; p.scoringPts = Math.max(p.scoringPts, td.pts); }
       }
     }
     // Player interaction (skip if invincible)
