@@ -536,8 +536,8 @@ function updateTornadoes(dt) {
     const type=t.seq[t.seqIdx];
     if (type==='_end'){t.dead=true;continue;}
     const td=TTYPES[type];
-    t.wobbleX+=(Math.random()-.5)*.8; t.wobbleY+=(Math.random()-.5)*.8;
-    t.wobbleX*=.95; t.wobbleY*=.95;
+    t.wobbleX+=(Math.random()-.5)*.2; t.wobbleY+=(Math.random()-.5)*.2;
+    t.wobbleX*=.98; t.wobbleY*=.98;
     t.x+=t.storm.vx+t.wobbleX; t.y+=t.storm.vy+t.wobbleY;
     t.rot+=0.08;
     t.seqTimer++;
