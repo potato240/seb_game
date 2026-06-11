@@ -409,6 +409,9 @@ function spawnStorm() {
 // TORNADOES
 // ═══════════════════════════════════════════════════════════
 const tornadoes = [];
+const buildingHealth = {};   // key: "tx,ty" -> hp (max 100)
+const destroyedBuildings = new Set();
+function bKey(tx,ty){return tx+','+ty;}
 function tornadoLifecycle() {
   const r = Math.random();
   if (r < 0.25) return ['rope','cone','rope','_end'];
@@ -471,7 +474,8 @@ function updatePlayer(dt) {
 }
 
 function isBuildingTile(wx, wy) {
-  return tileKind(Math.floor(wx/TILE), Math.floor(wy/TILE)) === 'building';
+  const tx=Math.floor(wx/TILE), ty=Math.floor(wy/TILE);
+  return !destroyedBuildings.has(bKey(tx,ty)) && tileKind(tx,ty) === 'building';
 }
 function playerBlocked(nx, ny) {
   const hw=9, hh=14;
@@ -553,6 +557,22 @@ function updateTornadoes(dt) {
         const proximity = 1 - pd / td.suck;
         p.health = Math.max(0, p.health - td.pts * 0.5 * proximity);
         if (p.health > 0) { p.scoring = true; p.scoringPts = Math.max(p.scoringPts, td.pts); }
+      }
+    }
+    // Building damage — tiles within tornado core take damage each frame
+    const tileR = Math.ceil((td.w/2) / TILE) + 1;
+    const cx = Math.floor(t.x/TILE), cy = Math.floor(t.y/TILE);
+    for (let bx=cx-tileR; bx<=cx+tileR; bx++) {
+      for (let by=cy-tileR; by<=cy+tileR; by++) {
+        const k = bKey(bx,by);
+        if (destroyedBuildings.has(k)) continue;
+        if (tileKind(bx,by) !== 'building') continue;
+        const wx=bx*TILE+TILE/2, wy=by*TILE+TILE/2;
+        const bd = Math.hypot(wx-t.x, wy-t.y);
+        if (bd > td.w/2) continue;
+        if (!(k in buildingHealth)) buildingHealth[k] = 100;
+        buildingHealth[k] -= td.dmg * 0.05;
+        if (buildingHealth[k] <= 0) destroyedBuildings.add(k);
       }
     }
     // Player interaction (skip if invincible)
@@ -640,17 +660,29 @@ function drawTerrain() {
         ctx.setLineDash([]);
       }
       if (kind==='building') {
-        // Draw a little building block
+        const k=bKey(tx,ty);
         const bw=hash(tx,ty)%20+28, bh=hash(tx+5,ty+5)%20+28;
         const bx=px+(TILE-bw)/2, by=py+(TILE-bh)/2;
-        ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.fillRect(bx+3,by+3,bw,bh);
-        ctx.fillStyle=tileBaseColor(tx,ty,'building'); ctx.fillRect(bx,by,bw,bh);
-        // Roof line
-        ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1;
-        ctx.strokeRect(bx,by,bw,bh);
-        // Windows
-        ctx.fillStyle='rgba(255,240,160,0.6)';
-        if (bw>30) { ctx.fillRect(bx+5,by+5,6,5); ctx.fillRect(bx+bw-11,by+5,6,5); }
+        if (destroyedBuildings.has(k)) {
+          // Rubble
+          ctx.fillStyle='#6b5a45';
+          for (let i=0;i<6;i++) {
+            const rx=px+hash(tx*7+i,ty*3)%TILE, ry=py+hash(tx*3,ty*7+i)%TILE;
+            const rs=3+hash(tx+i,ty-i)%6;
+            ctx.fillRect(rx,ry,rs,rs);
+          }
+        } else {
+          const hp = buildingHealth[k] ?? 100;
+          ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.fillRect(bx+3,by+3,bw,bh);
+          ctx.fillStyle=tileBaseColor(tx,ty,'building'); ctx.fillRect(bx,by,bw,bh);
+          if (hp < 100) {
+            ctx.fillStyle=`rgba(200,80,0,${(1-hp/100)*0.6})`; ctx.fillRect(bx,by,bw,bh);
+          }
+          ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1;
+          ctx.strokeRect(bx,by,bw,bh);
+          ctx.fillStyle='rgba(255,240,160,0.6)';
+          if (bw>30) { ctx.fillRect(bx+5,by+5,6,5); ctx.fillRect(bx+bw-11,by+5,6,5); }
+        }
       }
     }
   }
