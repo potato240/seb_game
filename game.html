@@ -445,7 +445,12 @@ function update(dt) {
 
 function updatePlayer(dt) {
   const TURN=0.045, ACCEL=0.18, BRAKE=0.92;
-  const onRoad = tileKind(Math.floor(player.x/TILE), Math.floor(player.y/TILE)) === 'road';
+  const nearRoad = (wx,wy) => {
+    for (let dx=-1;dx<=1;dx++) for (let dy=-1;dy<=1;dy++)
+      if (tileKind(Math.floor(wx/TILE)+dx, Math.floor(wy/TILE)+dy)==='road') return true;
+    return false;
+  };
+  const onRoad = nearRoad(player.x, player.y);
   const speedLimit = onRoad ? player.maxSpeed : player.maxSpeed * 0.5;
   if (player.thrown) {
     player.x += player.vx; player.y += player.vy;
