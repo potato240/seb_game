@@ -114,6 +114,7 @@ const TTYPES = {
   stovepipe:   { w:70,  suck:210, dmg:15, pts:3, label:'Stovepipe Tornado',    col:'#7a6050' },
   wedge:       { w:320, suck:500, dmg:28, pts:5, label:'Wedge Tornado',        col:'#504030' },
   multivortex: { w:130, suck:340, dmg:20, pts:4, label:'Multi-Vortex Tornado', col:'#605040' },
+  megawedge:   { w:600, suck:900, dmg:50, pts:8, label:'MEGA-WEDGE',           col:'#2a1a10' },
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -413,7 +414,8 @@ function tornadoLifecycle() {
   if (r < 0.25) return ['rope','cone','rope','_end'];
   if (r < 0.55) return ['rope','cone','stovepipe','cone','rope','_end'];
   if (r < 0.78) return ['rope','cone','stovepipe','wedge','stovepipe','cone','rope','_end'];
-  return ['rope','cone','multivortex','wedge','multivortex','cone','rope','_end'];
+  if (r < 0.94) return ['rope','cone','multivortex','wedge','multivortex','cone','rope','_end'];
+  return ['rope','cone','stovepipe','wedge','megawedge','wedge','stovepipe','cone','rope','_end'];
 }
 function spawnTornado(storm) {
   tornadoes.push({
