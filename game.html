@@ -947,8 +947,20 @@ function drawMap() {
     // Town labels
     for (const t of TOWNS) {
       const tx=t.x*SX, ty=t.y*SY, tr=TOWN_RADIUS*Math.min(SX,SY);
+      // Check if any buildings in this town have been damaged
+      const tileRadius = Math.ceil(TOWN_RADIUS/TILE);
+      const ctX=Math.floor(t.x/TILE), ctY=Math.floor(t.y/TILE);
+      let hasDamage=false, hasDestroyed=false;
+      for (let bx=ctX-tileRadius;bx<=ctX+tileRadius&&!hasDestroyed;bx++) {
+        for (let by=ctY-tileRadius;by<=ctY+tileRadius&&!hasDestroyed;by++) {
+          const k=bKey(bx,by);
+          if (destroyedBuildings.has(k)) { hasDestroyed=true; }
+          else if (k in buildingHealth) { hasDamage=true; }
+        }
+      }
+      const outlineCol = hasDestroyed ? 'rgba(255,40,40,0.9)' : hasDamage ? 'rgba(255,140,40,0.8)' : 'rgba(255,220,80,0.5)';
       mctx.beginPath();mctx.arc(tx,ty,tr,0,Math.PI*2);
-      mctx.strokeStyle='rgba(255,220,80,0.5)';mctx.lineWidth=1;mctx.stroke();
+      mctx.strokeStyle=outlineCol;mctx.lineWidth=hasDestroyed||hasDamage?2:1;mctx.stroke();
       mctx.fillStyle='#ffe080';mctx.font='bold 9px sans-serif';mctx.textAlign='center';
       mctx.fillText(t.name, tx, ty-tr-3);
     }
