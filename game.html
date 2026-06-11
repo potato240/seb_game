@@ -462,8 +462,8 @@ function updatePlayer(dt) {
   player.speed = Math.max(-speedLimit*0.75, Math.min(speedLimit, player.speed));
   const nx = player.x + Math.sin(player.angle) * player.speed;
   const ny = player.y - Math.cos(player.angle) * player.speed;
-  if (!playerBlocked(nx, ny)) { player.x = nx; player.y = ny; }
-  else player.speed = 0;
+  if (!playerBlocked(nx, ny)) { player.x = nx; player.y = ny; player.wasBlocked = false; }
+  else { if (!player.wasBlocked && Math.abs(player.speed) > 0.5) takeDamage(1); player.wasBlocked = true; player.speed = 0; }
   clampPlayer();
   if (player.invincible > 0) player.invincible--;
 }
