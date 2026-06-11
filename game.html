@@ -463,7 +463,7 @@ function updatePlayer(dt) {
   const nx = player.x + Math.sin(player.angle) * player.speed;
   const ny = player.y - Math.cos(player.angle) * player.speed;
   if (!playerBlocked(nx, ny)) { player.x = nx; player.y = ny; player.wasBlocked = false; }
-  else { if (!player.wasBlocked && Math.abs(player.speed) > 0.5) takeDamage(1); player.wasBlocked = true; player.speed = 0; }
+  else { if (!player.wasBlocked && Math.abs(player.speed) > 0.5) takeDamage(1, 'building'); player.wasBlocked = true; player.speed = 0; }
   clampPlayer();
   if (player.invincible > 0) player.invincible--;
 }
@@ -480,13 +480,15 @@ function clampPlayer() {
   player.x = Math.max(0,Math.min(WW,player.x));
   player.y = Math.max(0,Math.min(WH,player.y));
 }
-function takeDamage(dmg) {
+function takeDamage(dmg, cause) {
   if (player.health <= 0) return;
   player.health = Math.max(0, player.health-dmg);
   const f = document.getElementById('damage-flash');
   f.style.background='rgba(255,0,0,0.35)';
   setTimeout(()=>f.style.background='rgba(255,0,0,0)',120);
   if (player.health <= 0) {
+    const msg = cause === 'building' ? "Seriously? You were that committed?" : "Your storm chasing career ended here.";
+    document.querySelector('#death-screen p').textContent = msg;
     setTimeout(()=>document.getElementById('death-screen').classList.add('show'), 600);
   }
 }
