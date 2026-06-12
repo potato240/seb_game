@@ -483,10 +483,17 @@ function isBuildingTile(wx, wy) {
   const tx=Math.floor(wx/TILE), ty=Math.floor(wy/TILE);
   return !destroyedBuildings.has(bKey(tx,ty)) && tileKind(tx,ty) === 'building';
 }
+function inWeatherStationBuilding(nx, ny) {
+  const { x, y } = WEATHER_STATION;
+  const hw=9, hh=14;
+  // Building footprint only: x±44, y-44 to y+18
+  return nx+hw > x-44 && nx-hw < x+44 && ny+hh > y-44 && ny-hh < y+18;
+}
 function playerBlocked(nx, ny) {
   const hw=9, hh=14;
   return isBuildingTile(nx-hw,ny-hh) || isBuildingTile(nx+hw,ny-hh) ||
-         isBuildingTile(nx-hw,ny+hh) || isBuildingTile(nx+hw,ny+hh);
+         isBuildingTile(nx-hw,ny+hh) || isBuildingTile(nx+hw,ny+hh) ||
+         inWeatherStationBuilding(nx, ny);
 }
 function clampPlayer() {
   player.x = Math.max(0,Math.min(WW,player.x));
