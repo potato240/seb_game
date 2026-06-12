@@ -411,6 +411,7 @@ function spawnStorm() {
 const tornadoes = [];
 const buildingHealth = {};   // key: "tx,ty" -> hp (max 100)
 const destroyedBuildings = new Set();
+const destroyedTrees = new Set();
 function bKey(tx,ty){return tx+','+ty;}
 function tornadoLifecycle() {
   const r = Math.random();
@@ -580,6 +581,17 @@ function updateTornadoes(dt) {
         if (buildingHealth[k] <= 0) destroyedBuildings.add(k);
       }
     }
+    // Tree stripping — destroy trees within tornado core
+    for (let bx=cx-tileR; bx<=cx+tileR; bx++) {
+      for (let by=cy-tileR; by<=cy+tileR; by++) {
+        if (tileKind(bx,by)!=='grass') continue;
+        if (hash(bx*3+7,by*5+11)%5!==0) continue;
+        const k=bKey(bx,by);
+        if (destroyedTrees.has(k)) continue;
+        const wx=bx*TILE+TILE/2, wy=by*TILE+TILE/2;
+        if (Math.hypot(wx-t.x,wy-t.y)<td.w/2+16) destroyedTrees.add(k);
+      }
+    }
     // Player interaction (skip if invincible)
     if (player.invincible > 0) continue;
     const dx=player.x-t.x, dy=player.y-t.y, dist=Math.hypot(dx,dy);
@@ -638,6 +650,7 @@ function draw() {
   drawStorms();
   drawTornadoes();
   drawPlayer();
+  drawTrees();
   ctx.restore();
   drawRain();
   drawDayNight();
@@ -703,12 +716,14 @@ function drawTrees() {
       if (tileKind(tx,ty)!=='grass') continue;
       if (hash(tx*3+7,ty*5+11)%5!==0) continue;
       const px=tx*TILE+TILE/2, py=ty*TILE+TILE/2;
-      let stripped=false;
-      for (const t of tornadoes) {
-        if (t.dead||t.seq[t.seqIdx]==='_end') continue;
-        if (Math.hypot(px-t.x,py-t.y)<TTYPES[t.seq[t.seqIdx]].w/2+16) { stripped=true; break; }
+      const k=bKey(tx,ty);
+      if (destroyedTrees.has(k)) {
+        // Stump
+        ctx.beginPath(); ctx.arc(px,py,4,0,Math.PI*2);
+        ctx.fillStyle='#5a3a1a'; ctx.fill();
+        ctx.strokeStyle='#3a2010'; ctx.lineWidth=1.5; ctx.stroke();
+        continue;
       }
-      if (stripped) continue;
       const r=9+hash(tx*11,ty*7)%7;
       ctx.beginPath(); ctx.arc(px+2,py+2,r,0,Math.PI*2);
       ctx.fillStyle='rgba(0,0,0,0.18)'; ctx.fill();
