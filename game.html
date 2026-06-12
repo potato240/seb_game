@@ -707,48 +707,104 @@ function drawTerrain() {
   }
 }
 
-const WEATHER_STATION = { x: 8650, y: 8000 };
+const WEATHER_STATION = { x: 8530, y: 8000 };
 
 function drawWeatherStation() {
   const { x, y } = WEATHER_STATION;
   const dx = Math.abs(x - player.x), dy = Math.abs(y - player.y);
-  if (dx > canvas.width/2+200 || dy > canvas.height/2+200) return;
+  if (dx > canvas.width/2+300 || dy > canvas.height/2+300) return;
 
-  // Main building — large white/grey block
-  const bw=90, bh=70;
-  ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fillRect(x-bw/2+4, y-bh/2+4, bw, bh);
-  ctx.fillStyle='#d0d4d8'; ctx.fillRect(x-bw/2, y-bh/2, bw, bh);
-  ctx.strokeStyle='#a0a8b0'; ctx.lineWidth=2; ctx.strokeRect(x-bw/2, y-bh/2, bw, bh);
+  ctx.save();
 
-  // Roof stripe
-  ctx.fillStyle='#b0b8c0'; ctx.fillRect(x-bw/2, y-bh/2, bw, 10);
+  // Ground pad / concrete apron
+  ctx.fillStyle='#b8bec4';
+  ctx.beginPath(); ctx.roundRect(x-62, y-52, 124, 100, 4); ctx.fill();
+  ctx.strokeStyle='#9aa0a8'; ctx.lineWidth=1.5; ctx.stroke();
 
-  // Windows
-  ctx.fillStyle='rgba(150,210,255,0.7)';
-  ctx.fillRect(x-32, y-16, 14, 10); ctx.fillRect(x-10, y-16, 14, 10); ctx.fillRect(x+12, y-16, 14, 10);
-  ctx.strokeStyle='#888'; ctx.lineWidth=1;
-  ctx.strokeRect(x-32, y-16, 14, 10); ctx.strokeRect(x-10, y-16, 14, 10); ctx.strokeRect(x+12, y-16, 14, 10);
+  // Parking lot markings
+  ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1; ctx.setLineDash([6,4]);
+  ctx.beginPath(); ctx.moveTo(x-40, y+48); ctx.lineTo(x-40, y+20); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x-20, y+48); ctx.lineTo(x-20, y+20); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x,    y+48); ctx.lineTo(x,    y+20); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+20, y+48); ctx.lineTo(x+20, y+20); ctx.stroke();
+  ctx.setLineDash([]);
 
-  // Radar dish tower (pole)
-  ctx.strokeStyle='#888'; ctx.lineWidth=3;
-  ctx.beginPath(); ctx.moveTo(x, y-bh/2); ctx.lineTo(x, y-bh/2-22); ctx.stroke();
+  // Main building shadow
+  ctx.fillStyle='rgba(0,0,0,0.22)'; ctx.fillRect(x-44+5, y-44+5, 88, 62);
 
-  // Radar dish (rotating)
-  const rot = (Date.now() / 1200) % (Math.PI*2);
-  ctx.save(); ctx.translate(x, y-bh/2-22); ctx.rotate(rot);
-  ctx.strokeStyle='#60aadd'; ctx.lineWidth=2;
-  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(18,0); ctx.stroke();
-  ctx.beginPath(); ctx.arc(0,0,18,0,Math.PI*2);
-  ctx.strokeStyle='rgba(96,170,221,0.25)'; ctx.lineWidth=1; ctx.stroke();
-  // Dish end dot
-  ctx.beginPath(); ctx.arc(18,0,3,0,Math.PI*2);
-  ctx.fillStyle='#60aadd'; ctx.fill();
+  // Main building body
+  const grad = ctx.createLinearGradient(x-44, y-44, x+44, y-44);
+  grad.addColorStop(0, '#d8dde2'); grad.addColorStop(1, '#c4ccd4');
+  ctx.fillStyle=grad; ctx.fillRect(x-44, y-44, 88, 62);
+
+  // Roof band
+  ctx.fillStyle='#4a6a8a'; ctx.fillRect(x-44, y-44, 88, 12);
+  // Roof highlight stripe
+  ctx.fillStyle='rgba(255,255,255,0.15)'; ctx.fillRect(x-44, y-44, 88, 3);
+
+  // Side panel lines
+  ctx.strokeStyle='rgba(0,0,0,0.1)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(x-14, y-32); ctx.lineTo(x-14, y+18); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x+14, y-32); ctx.lineTo(x+14, y+18); ctx.stroke();
+
+  // Windows — left wing
+  ctx.fillStyle='rgba(140,200,255,0.75)';
+  ctx.fillRect(x-38, y-28, 16, 11); ctx.fillRect(x-38, y-12, 16, 11);
+  // Windows — right wing
+  ctx.fillRect(x+22, y-28, 16, 11); ctx.fillRect(x+22, y-12, 16, 11);
+  // Centre door
+  ctx.fillStyle='rgba(80,110,140,0.9)'; ctx.fillRect(x-8, y+2, 16, 16);
+  ctx.fillStyle='rgba(140,200,255,0.4)'; ctx.fillRect(x-8, y+2, 16, 8);
+  // Window frames
+  ctx.strokeStyle='rgba(60,90,120,0.6)'; ctx.lineWidth=1;
+  ctx.strokeRect(x-38,y-28,16,11); ctx.strokeRect(x-38,y-12,16,11);
+  ctx.strokeRect(x+22,y-28,16,11); ctx.strokeRect(x+22,y-12,16,11);
+
+  // Building outline
+  ctx.strokeStyle='#8090a0'; ctx.lineWidth=1.5;
+  ctx.strokeRect(x-44, y-44, 88, 62);
+
+  // Antenna mast — tripod base
+  ctx.strokeStyle='#778'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x-8, y-44); ctx.lineTo(x, y-62); ctx.lineTo(x+8, y-44); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x-6, y-50); ctx.lineTo(x+6, y-50); ctx.stroke();
+  // Mast pole
+  ctx.strokeStyle='#99aaaa'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.moveTo(x, y-62); ctx.lineTo(x, y-86); ctx.stroke();
+
+  // Rotating radar dish
+  const rot = (Date.now() / 1400) % (Math.PI*2);
+  ctx.save(); ctx.translate(x, y-86); ctx.rotate(rot);
+  // Sweep glow
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,28,-0.3,0.3);
+  ctx.fillStyle='rgba(80,180,255,0.12)'; ctx.fill();
+  // Arm
+  ctx.strokeStyle='#7ec8f0'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(24,0); ctx.stroke();
+  // Counter arm
+  ctx.strokeStyle='rgba(126,200,240,0.4)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-10,0); ctx.stroke();
+  // Dish head
+  ctx.beginPath(); ctx.arc(24,0,5,0,Math.PI*2);
+  ctx.fillStyle='#7ec8f0'; ctx.fill();
+  ctx.strokeStyle='#4a90c0'; ctx.lineWidth=1.5; ctx.stroke();
+  // Hub
+  ctx.beginPath(); ctx.arc(0,0,4,0,Math.PI*2);
+  ctx.fillStyle='#aab8c0'; ctx.fill();
+  ctx.strokeStyle='#778'; ctx.lineWidth=1; ctx.stroke();
   ctx.restore();
+
+  // Scan ring — pulses outward
+  const pulse = (Date.now() % 2000) / 2000;
+  ctx.beginPath(); ctx.arc(x, y-86, 10 + pulse*50, 0, Math.PI*2);
+  ctx.strokeStyle=`rgba(80,180,255,${0.35*(1-pulse)})`; ctx.lineWidth=1.5; ctx.stroke();
 
   // Label
   ctx.font='bold 11px monospace'; ctx.textAlign='center';
-  ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillText('WEATHER STATION', x+1, y-bh/2-32);
-  ctx.fillStyle='#aaddff'; ctx.fillText('WEATHER STATION', x, y-bh/2-33);
+  ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillText('⚡ WEATHER STATION', x+1, y-98);
+  ctx.fillStyle='#aaddff'; ctx.fillText('⚡ WEATHER STATION', x, y-99);
+
+  ctx.restore();
 }
 
 function drawTrees() {
