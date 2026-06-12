@@ -691,6 +691,26 @@ function drawTerrain() {
       }
     }
   }
+  // Second pass: draw flat trees on top of ground tiles
+  for (let ty=sTY;ty<eTY;ty++) {
+    for (let tx=sTX;tx<eTX;tx++) {
+      if (tileKind(tx,ty)!=='grass') continue;
+      if (hash(tx*3+7,ty*5+11)%5!==0) continue;
+      const px=tx*TILE+TILE/2, py=ty*TILE+TILE/2;
+      let stripped=false;
+      for (const t of tornadoes) {
+        if (t.dead||t.seq[t.seqIdx]==='_end') continue;
+        if (Math.hypot(px-t.x,py-t.y)<TTYPES[t.seq[t.seqIdx]].w/2+16) { stripped=true; break; }
+      }
+      if (stripped) continue;
+      const r=9+hash(tx*11,ty*7)%7;
+      ctx.beginPath(); ctx.arc(px+2,py+2,r,0,Math.PI*2);
+      ctx.fillStyle='rgba(0,0,0,0.18)'; ctx.fill();
+      ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2);
+      ctx.fillStyle='#3a7a3a'; ctx.fill();
+      ctx.strokeStyle='#2a5a2a'; ctx.lineWidth=2; ctx.stroke();
+    }
+  }
 }
 
 function drawTownLabels() {
