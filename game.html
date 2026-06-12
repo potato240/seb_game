@@ -806,11 +806,6 @@ function drawWeatherStation() {
   ctx.beginPath(); ctx.arc(x, y-86, 10 + pulse*50, 0, Math.PI*2);
   ctx.strokeStyle=`rgba(80,180,255,${0.35*(1-pulse)})`; ctx.lineWidth=1.5; ctx.stroke();
 
-  // Label
-  ctx.font='bold 11px monospace'; ctx.textAlign='center';
-  ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillText('⚡ WEATHER STATION', x+1, y-98);
-  ctx.fillStyle='#aaddff'; ctx.fillText('⚡ WEATHER STATION', x, y-99);
-
   ctx.restore();
 }
 
