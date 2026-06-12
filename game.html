@@ -651,6 +651,7 @@ function draw() {
   drawTornadoes();
   drawPlayer();
   drawTrees();
+  drawWeatherStation();
   ctx.restore();
   drawRain();
   drawDayNight();
@@ -704,6 +705,50 @@ function drawTerrain() {
       }
     }
   }
+}
+
+const WEATHER_STATION = { x: 8650, y: 8000 };
+
+function drawWeatherStation() {
+  const { x, y } = WEATHER_STATION;
+  const dx = Math.abs(x - player.x), dy = Math.abs(y - player.y);
+  if (dx > canvas.width/2+200 || dy > canvas.height/2+200) return;
+
+  // Main building — large white/grey block
+  const bw=90, bh=70;
+  ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.fillRect(x-bw/2+4, y-bh/2+4, bw, bh);
+  ctx.fillStyle='#d0d4d8'; ctx.fillRect(x-bw/2, y-bh/2, bw, bh);
+  ctx.strokeStyle='#a0a8b0'; ctx.lineWidth=2; ctx.strokeRect(x-bw/2, y-bh/2, bw, bh);
+
+  // Roof stripe
+  ctx.fillStyle='#b0b8c0'; ctx.fillRect(x-bw/2, y-bh/2, bw, 10);
+
+  // Windows
+  ctx.fillStyle='rgba(150,210,255,0.7)';
+  ctx.fillRect(x-32, y-16, 14, 10); ctx.fillRect(x-10, y-16, 14, 10); ctx.fillRect(x+12, y-16, 14, 10);
+  ctx.strokeStyle='#888'; ctx.lineWidth=1;
+  ctx.strokeRect(x-32, y-16, 14, 10); ctx.strokeRect(x-10, y-16, 14, 10); ctx.strokeRect(x+12, y-16, 14, 10);
+
+  // Radar dish tower (pole)
+  ctx.strokeStyle='#888'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(x, y-bh/2); ctx.lineTo(x, y-bh/2-22); ctx.stroke();
+
+  // Radar dish (rotating)
+  const rot = (Date.now() / 1200) % (Math.PI*2);
+  ctx.save(); ctx.translate(x, y-bh/2-22); ctx.rotate(rot);
+  ctx.strokeStyle='#60aadd'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(18,0); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0,0,18,0,Math.PI*2);
+  ctx.strokeStyle='rgba(96,170,221,0.25)'; ctx.lineWidth=1; ctx.stroke();
+  // Dish end dot
+  ctx.beginPath(); ctx.arc(18,0,3,0,Math.PI*2);
+  ctx.fillStyle='#60aadd'; ctx.fill();
+  ctx.restore();
+
+  // Label
+  ctx.font='bold 11px monospace'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillText('WEATHER STATION', x+1, y-bh/2-32);
+  ctx.fillStyle='#aaddff'; ctx.fillText('WEATHER STATION', x, y-bh/2-33);
 }
 
 function drawTrees() {
