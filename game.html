@@ -638,6 +638,7 @@ function draw() {
   drawStorms();
   drawTornadoes();
   drawPlayer();
+  drawTrees();
   ctx.restore();
   drawRain();
   drawDayNight();
@@ -691,7 +692,13 @@ function drawTerrain() {
       }
     }
   }
-  // Second pass: draw flat trees on top of ground tiles
+}
+
+function drawTrees() {
+  const sTX=Math.floor((player.x-canvas.width/2)/TILE)-1;
+  const sTY=Math.floor((player.y-canvas.height/2)/TILE)-1;
+  const eTX=sTX+Math.ceil(canvas.width/TILE)+3;
+  const eTY=sTY+Math.ceil(canvas.height/TILE)+3;
   for (let ty=sTY;ty<eTY;ty++) {
     for (let tx=sTX;tx<eTX;tx++) {
       if (tileKind(tx,ty)!=='grass') continue;
