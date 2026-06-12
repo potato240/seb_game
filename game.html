@@ -691,6 +691,33 @@ function drawTerrain() {
       }
     }
   }
+  // Second pass: draw trees on top of ground tiles
+  for (let ty=sTY;ty<eTY;ty++) {
+    for (let tx=sTX;tx<eTX;tx++) {
+      if (tileKind(tx,ty)!=='grass') continue;
+      if (hash(tx*3+7,ty*5+11)%5!==0) continue; // ~20% of grass tiles
+      const px=tx*TILE+TILE/2, py=ty*TILE+TILE/2;
+      // Check if a tornado has stripped this tree
+      let stripped=false;
+      for (const t of tornadoes) {
+        if (t.dead||t.seq[t.seqIdx]==='_end') continue;
+        if (Math.hypot(px-t.x,py-t.y)<TTYPES[t.seq[t.seqIdx]].w/2+16) { stripped=true; break; }
+      }
+      if (stripped) continue;
+      const r=10+hash(tx*11,ty*7)%8;
+      // Shadow
+      ctx.beginPath(); ctx.ellipse(px+3,py+4,r,r*0.6,0,0,Math.PI*2);
+      ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.fill();
+      // Canopy
+      const g=ctx.createRadialGradient(px-2,py-2,1,px,py,r);
+      g.addColorStop(0,'#5cb85c'); g.addColorStop(0.6,'#3d8b3d'); g.addColorStop(1,'#2a5e2a');
+      ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2);
+      ctx.fillStyle=g; ctx.fill();
+      // Highlight
+      ctx.beginPath(); ctx.arc(px-r*0.3,py-r*0.3,r*0.25,0,Math.PI*2);
+      ctx.fillStyle='rgba(120,200,80,0.35)'; ctx.fill();
+    }
+  }
 }
 
 function drawTownLabels() {
